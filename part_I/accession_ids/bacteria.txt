@@ -1,0 +1,8 @@
+GCF_000005845.2; Escherichia coli
+GCF_004799605.1; Halobacterium salinarum
+GCF_009035845.1; Acinetobacter baumannii
+GCF_001895085.1; Mariprofundus micogutta
+GCF_000018525.1; Brucella canis
+GCF_001457635.1; Streptococcus pneumoniae
+GCF_022869645.1; Neisseria meningitidis
+GCF_016026695.1; Lactococcus garvieae
