@@ -3,6 +3,7 @@ import zipfile
 import pickle
 import subprocess
 import argparse
+from Bio import SeqIO
 
 
 def fetch_proteomes_ncbi_datasets(accession_file, output_dir):
@@ -79,34 +80,6 @@ def extract_protein_faa(zip_dir, output_dir):
                 print(f"Error: {filename} is not a valid zip file.")
 
 
-def prepare_genome_map(protein_files_dir, output_dir):
-    """
-    Create a mapping from sequence IDs to genome IDs based on protein files.
-    
-    Parameters:
-    - protein_files_dir: str, Directory containing protein FASTA files.
-    - output_dir: str, Directory to save a genome_map.
-    - output_name: str, Name of the prepared genome map.
-    """
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    print("Preparing mapping from sequence IDs to genome IDs.")
-
-    genome_map = {}
-    for file in os.listdir(protein_files_dir):
-        if file.endswith(".faa"):
-            genome_id = os.path.splitext(file)[0]
-            with open(os.path.join(protein_files_dir, file), "r") as f:
-                for line in f:
-                    if line.startswith(">"):
-                        prot_id = line[1:].split()[0]
-                        genome_map[prot_id] = genome_id
-    
-    with open(os.path.join(output_dir, "seqID2genomeID.pkl"), "wb") as f:
-        pickle.dump(genome_map, f)
-
-
 def prepare_genome_names_map(accession_file, output_dir):
     """
     Create a mapping from genome IDs to natural names based on accesion file.
@@ -130,8 +103,41 @@ def prepare_genome_names_map(accession_file, output_dir):
             name = parts[1].strip()
             name_map[accession] = name
     
-    with open(os.path.join(output_dir, "genomeID2name.pkl"), "wb") as f:
-        pickle.dump(name_map, f)
+    #with open(os.path.join(output_dir, "genomeID2name.pkl"), "wb") as f:
+        #pickle.dump(name_map, f)
+    return name_map
+
+
+def prepare_genome_map(protein_files_dir, genomeID2name, output_dir, output_name="genome_map.pkl"):
+    """
+    Create a mapping from protein sequence IDs to genome IDs, genome names, and sequences based on protein FASTA files.
+    
+    Parameters:
+    - protein_files_dir: str, Directory containing protein FASTA files.
+    - genomeID2name: dict, Mapping of genome IDs to genome names.
+    - output_dir: str, Directory to save the genome map.
+    - output_name: str, Name of the file to save the genome map.
+    """
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    print("Preparing mapping from protein IDs to genome IDs, genome names, and sequences.")
+
+    genome_map = {}
+    for file in os.listdir(protein_files_dir):
+        if file.endswith(".faa"):
+            genome_id = os.path.splitext(file)[0]
+            genome_name = genomeID2name.get(genome_id, "Unknown Genome")
+
+            file_path = os.path.join(protein_files_dir, file)
+            for record in SeqIO.parse(file_path, "fasta"):
+                prot_id = record.id  # Protein ID
+                sequence = str(record.seq)  # Protein sequence
+                genome_map[prot_id] = (genome_id, genome_name, sequence)
+
+    output_path = os.path.join(output_dir, output_name)
+    with open(output_path, "wb") as f:
+        pickle.dump(genome_map, f)
 
 
 def combine_fasta_files(input_dir:str, output_dir:str):
@@ -149,7 +155,7 @@ def combine_fasta_files(input_dir:str, output_dir:str):
 
 
 def is_done(path2check:str)->bool:
-    if len(os.listdir(path2check)) > 0:
+    if os.path.exists(path2check) and len(os.listdir(path2check)) > 0:
         return True
     else:
         return False
@@ -183,7 +189,7 @@ if __name__ == "__main__":
         print("Fasta files already merged!")
 
     if not is_done(MAPS_DIR):
-        prepare_genome_map(FASTA_DIR, MAPS_DIR)
-        prepare_genome_names_map(ACCESSION_FILEPATH, MAPS_DIR)
+        genome_name_map = prepare_genome_names_map(ACCESSION_FILEPATH, MAPS_DIR)
+        prepare_genome_map(FASTA_DIR, genome_name_map, MAPS_DIR, output_name="genome_map.pkl")
     else:
         print("Maps are already prepared!")

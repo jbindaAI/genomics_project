@@ -19,9 +19,8 @@ echo "Step 2: Clustering protein sequences with MMseqs2..."
 python part_II/cluster.py --accession_file "$ACCESSION_FILE" --min_seq_id $MIN_SEQ_ID --coverage $COVERAGE
 
 # Step 3: Analyze clusters and extract families (1-to-1)
-#echo "Step 4: Analyzing clusters to extract gene families..."
-#python analyze_clusters.py --cluster_file "$CLUSTER_DIR/cluster_results.tsv" --output_file "$OUTPUT_PREFIX/family_1to1.tsv"
-
+echo "Step 4: Analyzing clusters to extract gene families..."
+python part_III/make_families.py --accession_file "$ACCESSION_FILE"
 # Step 4: Multi-sequence alignment
 
 # Step 5: Construct gene trees

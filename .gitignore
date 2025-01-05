@@ -3,3 +3,4 @@
 *.pkl
 *.fasta
 *.tsv
+filtered_clusters*

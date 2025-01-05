@@ -1,5 +1,6 @@
 import os
 import pickle
+import argparse
 from collections import defaultdict
 
 
@@ -16,7 +17,7 @@ def parse_clusters(cluster_file):
     cluster_map = defaultdict(list)
     with open(cluster_file, "r") as f:
         for line in f:
-            sequence, cluster = line.strip().split("\t")
+            cluster, sequence = line.strip().split("\t")
             cluster_map[cluster].append(sequence)
     return cluster_map
 
@@ -27,7 +28,7 @@ def filter_one_to_one_clusters(cluster_map, genome_map):
     
     Parameters:
     - cluster_map: dict, Cluster ID -> List of sequence IDs.
-    - genome_map: dict, Sequence -> Genome mapping from sequence ID to genome ID.
+    - genome_map: dict, Sequence ID -> (Genome ID, Genome name, sequence) mapping.
     
     Returns:
     - filtered_clusters: dict, Filtered clusters with genome IDs as keys.
@@ -40,28 +41,23 @@ def filter_one_to_one_clusters(cluster_map, genome_map):
         genome_sequences = {}
         
         for seq in sequences:
-            genome = genome_map.get(seq, "Unknown")
-            genome_counts[genome] += 1
-            genome_sequences[genome] = seq
+            genomeID, _, _ = genome_map.get(seq, "Unknown")
+            genome_counts[genomeID] += 1
+            genome_sequences[genomeID] = seq
         
         # Check if cluster is 1-1 (exactly one sequence per genome)
         if len(genome_counts) == len(genome_sequences) and all(count == 1 for count in genome_counts.values()):
-            filtered_clusters[cluster] = {genome: genome_sequences[genome] for genome in genome_sequences}
-    
+            filtered_clusters[cluster] = {genomeID: genome_sequences[genomeID] for genomeID in genome_sequences}
     return filtered_clusters
 
 
-def load_genome_maps(dataset:str):
+def load_genome_map(dataset:str):
     """
     Loads previously computed genome maps.
     """
-    with open(f"part_I/data/maps/{dataset}_seqID2genomeID.pkl", "rb") as f1:
-        seqID2genomeID = pickle.load(f1)
-
-    with open(f"part_I/data/maps/{dataset}_genomeID2name.pkl", "rb") as f2: 
-        genomeID2name = pickle.load(f2)
-
-    return seqID2genomeID, genomeID2name
+    with open(f"part_I/data/maps/{dataset}/genome_map.pkl", "rb") as f1: 
+        genome_map = pickle.load(f1)
+    return genome_map
 
 
 def save_filtered_clusters(filtered_clusters, output_file):
@@ -74,29 +70,51 @@ def save_filtered_clusters(filtered_clusters, output_file):
     """
     with open(output_file, "w") as f:
         for cluster, genomes in filtered_clusters.items():
-            cluster_line = f"{cluster}:\t" + "\t".join(seq for seq in genomes.values())
+            cluster_line = f"{cluster}:" + "".join(f"{seq} " for seq in genomes.values())
             f.write(cluster_line + "\n")
 
 
-if __name__ == "__main__":
-    # Paths and parameters
-    cluster_file = "part_II/ClusterRes_cluster.tsv"
-    protein_files_dir = "part_I/data/proteome_fasta/"
-    output_file = "part_III/filtered_clusters_1-1.txt"
-    dataset = "bacteria"
+def prepare_families(filtered_clusters:dict, genome_map:dict, output_dir:str):
+    """
+    Prepare protein families for multiple sequence analysis.
+    """
+    for cluster, genomes in filtered_clusters.items():
+        # Save sequences to a file
+        with open(os.path.join(output_dir, f"{cluster}.fasta"), "w") as f:
+            for genome, seq_ID in genomes.items():
+                f.write(f">{genome}\n{genome_map[seq_ID][2]}\n")
 
-    # Load genome maps
-    seqID2genomeID, genomeID2name = load_genome_maps(dataset)
-    print(f"Loaded genome map with {len(seqID2genomeID)} sequences.")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Script for filtering 1-1 clusters from MMseqs2 results.")
+    parser.add_argument("--accession_filename", required=True, help="Name of an accession file.")
+    args = parser.parse_args()
+
+    # Paths and parameters
+    BASENAME = args.accession_filename.split(".")[0]
+    CLUSTER_RES_PATH = os.path.join("part_II/clustering_results", BASENAME, "clustering_results_cluster.tsv")
+    FILTERED_OUTPUT_FILE = os.path.join("part_III/filtered_clusters", BASENAME, "filtered_clusters_1-1.txt")
+    FAMILIES_OUTPUT_DIR = os.path.join("part_III/protein_families", BASENAME)
+
+    os.makedirs(os.path.join("part_III/filtered_clusters", BASENAME), exist_ok=True)
+    os.makedirs(FAMILIES_OUTPUT_DIR, exist_ok=True)
+
+    # Load genome map
+    genome_map = load_genome_map(BASENAME)
+    print(f"Loaded genome map with {len(genome_map)} sequences.")
 
     # Parse clusters
-    cluster_map = parse_clusters(cluster_file)
-    print(f"Parsed {len(cluster_map)} clusters from {cluster_file}.")
+    cluster_map = parse_clusters(CLUSTER_RES_PATH)
+    print(f"Parsed {len(cluster_map)} clusters from {CLUSTER_RES_PATH}.")
 
     # Filter 1-1 clusters
-    filtered_clusters = filter_one_to_one_clusters(cluster_map, seqID2genomeID)
+    filtered_clusters = filter_one_to_one_clusters(cluster_map, genome_map)
     print(f"Filtered to {len(filtered_clusters)} 1-1 clusters.")
 
-    # Save filtered clusters
-    save_filtered_clusters(filtered_clusters, output_file)
-    print(f"Filtered clusters saved to {output_file}.")
+    # Save filtered clusters in a file
+    save_filtered_clusters(filtered_clusters, FILTERED_OUTPUT_FILE)
+    print(f"Filtered clusters saved to {FILTERED_OUTPUT_FILE}.")
+
+    # Prepare families for MSA:
+    prepare_families(filtered_clusters, genome_map, FAMILIES_OUTPUT_DIR)
+    print("Families prepared for multiple sequence analysis.")

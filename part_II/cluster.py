@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import argparse
 
@@ -31,6 +32,7 @@ def mmseqs2_cluster(combined_fasta_path, output_dir, tmp_dir, min_seq_id=0.5, co
         command = [
             "mmseqs", "easy-cluster",
             combined_fasta_path, output_name, tmp_dir,
+            '-v', '0',
             "--min-seq-id", str(min_seq_id),
             "-c", str(coverage)
         ]
@@ -38,6 +40,7 @@ def mmseqs2_cluster(combined_fasta_path, output_dir, tmp_dir, min_seq_id=0.5, co
         print(f"Running MMseqs2 clustering: {' '.join(command)}")
         subprocess.run(command, check=True)
         print(f"Clustering complete.")
+        shutil.rmtree(tmp_dir)
     finally:
         os.chdir(original_dir)
 
