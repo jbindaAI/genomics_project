@@ -22,7 +22,7 @@ def parse_clusters(cluster_file):
     return cluster_map
 
 
-def filter_one_to_one_clusters(cluster_map, genome_map):
+def filter_one_to_one_clusters(cluster_map, min_cluster_size, genome_map):
     """
     Filter clusters to include only 1-1 clusters (one sequence per genome).
     
@@ -35,7 +35,7 @@ def filter_one_to_one_clusters(cluster_map, genome_map):
     """
     filtered_clusters = {}
     for cluster, sequences in cluster_map.items():
-        if len(sequences) < 2:
+        if len(sequences) < min_cluster_size:
             continue
         genome_counts = defaultdict(int)
         genome_sequences = {}
@@ -88,10 +88,12 @@ def prepare_families(filtered_clusters:dict, genome_map:dict, output_dir:str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Script for filtering 1-1 clusters from MMseqs2 results.")
     parser.add_argument("--accession_filename", required=True, help="Name of an accession file.")
+    parser.add_argument("--min_cluster_size", required=True, type=int, help="Minimum number of sequences in clusters.")
     args = parser.parse_args()
 
     # Paths and parameters
     BASENAME = args.accession_filename.split(".")[0]
+    MIN_CLUSTER_SIZE = args.min_cluster_size
     CLUSTER_RES_PATH = os.path.join("part_II/clustering_results", BASENAME, "clustering_results_cluster.tsv")
     FILTERED_OUTPUT_FILE = os.path.join("part_III/filtered_clusters", BASENAME, "filtered_clusters_1-1.txt")
     FAMILIES_OUTPUT_DIR = os.path.join("part_III/protein_families", BASENAME)
@@ -108,7 +110,7 @@ if __name__ == "__main__":
     print(f"Parsed {len(cluster_map)} clusters from {CLUSTER_RES_PATH}.")
 
     # Filter 1-1 clusters
-    filtered_clusters = filter_one_to_one_clusters(cluster_map, genome_map)
+    filtered_clusters = filter_one_to_one_clusters(cluster_map, MIN_CLUSTER_SIZE, genome_map)
     print(f"Filtered to {len(filtered_clusters)} 1-1 clusters.")
 
     # Save filtered clusters in a file

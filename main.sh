@@ -7,8 +7,9 @@ set -e
 ACCESSION_FILE="bacteria.txt"
 
 ## Clustering options
-MIN_SEQ_ID=0.5 # Minimum sequence identity for clustering.
-COVERAGE=0.8 # Minimum coverage for clustering.
+MIN_SEQ_ID=0.5      # Minimum sequence identity for clustering.
+COVERAGE=0.8        # Minimum coverage for clustering.
+MIN_CLUSTER_SIZE=4  # Minimum number of sequences in clusters.
 
 # Step 1: Prepare data - download proteomes using accessions IDs defined in the ACCESSION_FILE.
 echo "Step 1: Downloading proteomes..."
@@ -20,7 +21,8 @@ python part_II/cluster.py --accession_file "$ACCESSION_FILE" --min_seq_id $MIN_S
 
 # Step 3: Analyze clusters and extract families (1-to-1)
 echo "Step 4: Analyzing clusters to extract gene families..."
-python part_III/make_families.py --accession_file "$ACCESSION_FILE"
+python part_III/make_families.py --accession_file "$ACCESSION_FILE" --min_cluster_size $MIN_CLUSTER_SIZE
+
 # Step 4: Multi-sequence alignment
 
 # Step 5: Construct gene trees
