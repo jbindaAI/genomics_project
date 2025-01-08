@@ -1,4 +1,4 @@
-DIR=""
+DIR=" "
 INPUTS="${DIR}/msa_fasta"
 OUTPUTS="${DIR}/fast_trees"
 
