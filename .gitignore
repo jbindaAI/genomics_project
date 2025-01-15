@@ -4,3 +4,11 @@
 *.fasta
 *.tsv
 filtered_clusters*
+*.log
+*.gz
+*.iqtree
+*.treefile
+*.bionj
+*.mldist
+*.phy
+*.txt

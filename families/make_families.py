@@ -4,7 +4,7 @@ import argparse
 from collections import defaultdict
 
 
-def parse_clusters(cluster_file):
+def parse_clusters(cluster_file: str):
     """
     Parse MMseqs2 cluster results to map sequences to clusters.
     
@@ -22,9 +22,10 @@ def parse_clusters(cluster_file):
     return cluster_map
 
 
-def filter_one_to_one_clusters(cluster_map, min_cluster_size, genome_map):
+def filter_clusters(cluster_map, min_cluster_size, genome_map, one2one:bool):
     """
-    Filter clusters to include only 1-1 clusters (one sequence per genome).
+    Filter clusters to include cluster of size >= min_cluster_size.
+    Also If needed select only 1-1 clusters (one sequence per genome).
     
     Parameters:
     - cluster_map: dict, Cluster ID -> List of sequence IDs.
@@ -46,8 +47,11 @@ def filter_one_to_one_clusters(cluster_map, min_cluster_size, genome_map):
             genome_sequences[genomeID] = seq
         
         # Check if cluster is 1-1 (exactly one sequence per genome)
-        if len(genome_counts) == len(genome_sequences) and all(count == 1 for count in genome_counts.values()):
+        if one2one and len(genome_counts) == len(genome_sequences) and all(count == 1 for count in genome_counts.values()):
             filtered_clusters[cluster] = {genomeID: genome_sequences[genomeID] for genomeID in genome_sequences}
+        elif not one2one:
+            filtered_clusters[cluster] = {genomeID: genome_sequences[genomeID] for genomeID in genome_sequences}
+
     return filtered_clusters
 
 
@@ -95,11 +99,18 @@ if __name__ == "__main__":
     BASENAME = args.basename
     MIN_CLUSTER_SIZE = args.min_cluster_size
     CLUSTER_RES_PATH = os.path.join("clustering/clustering_results", BASENAME, "clustering_results_cluster.tsv")
-    FILTERED_OUTPUT_FILE = os.path.join("families/filtered_clusters", BASENAME, "filtered_clusters_1-1.txt")
-    FAMILIES_OUTPUT_DIR = os.path.join("families/protein_families", BASENAME)
+    
+    CLUSTER_OUTPUT_DIR_ORTOLOGS = os.path.join("families/clusters_ortologs", BASENAME)
+    CLUSTER_OUTPUT_DIR_PARALOGS = os.path.join("families/clusters_paralogs", BASENAME)
 
-    os.makedirs(os.path.join("families/filtered_clusters", BASENAME), exist_ok=True)
-    os.makedirs(FAMILIES_OUTPUT_DIR, exist_ok=True)
+    ORTOLOGS_FAMILIES_OUTPUT_DIR = os.path.join("families/protein_families/ortologs", BASENAME)
+    PARALOGS_FAMILIES_OUTPUT_DIR = os.path.join("families/protein_families/paralogs", BASENAME)
+
+    os.makedirs(CLUSTER_OUTPUT_DIR_ORTOLOGS, exist_ok=True)
+    os.makedirs(CLUSTER_OUTPUT_DIR_PARALOGS, exist_ok=True)
+
+    os.makedirs(ORTOLOGS_FAMILIES_OUTPUT_DIR, exist_ok=True)
+    os.makedirs(PARALOGS_FAMILIES_OUTPUT_DIR, exist_ok=True)
 
     # Load genome map
     genome_map = load_genome_map(BASENAME)
@@ -109,14 +120,27 @@ if __name__ == "__main__":
     cluster_map = parse_clusters(CLUSTER_RES_PATH)
     print(f"Parsed {len(cluster_map)} clusters from {CLUSTER_RES_PATH}.")
 
+    # Prepare clusters with paralogs
+    clusters_paralogs = filter_clusters(cluster_map, MIN_CLUSTER_SIZE, genome_map, one2one=False)
+    print(f"Extracted {len(clusters_paralogs)} clusters with paralogs.")
+
     # Filter 1-1 clusters
-    filtered_clusters = filter_one_to_one_clusters(cluster_map, MIN_CLUSTER_SIZE, genome_map)
-    print(f"Filtered to {len(filtered_clusters)} 1-1 clusters.")
+    clusters_ortologs = filter_clusters(cluster_map, MIN_CLUSTER_SIZE, genome_map, one2one=True)
+    print(f"Extracted {len(clusters_ortologs)} 1-1 clusters (without paralogs).")
 
-    # Save filtered clusters in a file
-    save_filtered_clusters(filtered_clusters, FILTERED_OUTPUT_FILE)
-    print(f"Filtered clusters saved to {FILTERED_OUTPUT_FILE}.")
+    # Save clusters with paralogs in a file
+    paralogs_save_path = os.path.join(CLUSTER_OUTPUT_DIR_PARALOGS, "clusters_paralogs.txt")
+    save_filtered_clusters(clusters_paralogs, paralogs_save_path)
+    print(f"Clusters with paralogs saved to {paralogs_save_path}.")
 
-    # Prepare families for MSA:
-    prepare_families(filtered_clusters, genome_map, FAMILIES_OUTPUT_DIR)
+    # Save clusters without paralogs in a file
+    ortologs_save_path = os.path.join(CLUSTER_OUTPUT_DIR_ORTOLOGS, "clusters_1-1.txt")
+    save_filtered_clusters(clusters_ortologs, ortologs_save_path)
+    print(f"Clusters without paralogs saved to {ortologs_save_path}.")
+
+    # Prepare families for MSA (with paralogs):
+    prepare_families(clusters_paralogs, genome_map, PARALOGS_FAMILIES_OUTPUT_DIR)
+
+    # Prepare families for MSA (without paralogs):
+    prepare_families(clusters_ortologs, genome_map, ORTOLOGS_FAMILIES_OUTPUT_DIR)
     print("Families prepared for multiple sequence analysis.")

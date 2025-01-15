@@ -13,7 +13,7 @@ def mafft_align(fasta_path: str, output_dir: str):
     with tqdm(total=len(fasta_files), desc="Aligning sequences", unit="file") as pbar:
         for fasta_file in fasta_files:
             exact_filepath = os.path.join(fasta_path, fasta_file)
-            output_file = os.path.join(output_dir, f"{os.path.splitext(fasta_file)[0]}_aligned.fasta")
+            output_file = os.path.join(output_dir, f"{os.path.splitext(fasta_file)[0]}-aligned.fasta")
             try:
                 command = [
                     "mafft",
@@ -45,8 +45,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     BASENAME = args.basename
-    PROTEIN_FAMILIES_PATH = os.path.join("families/protein_families", BASENAME)
-    OUTPUT_DIR = os.path.join("allignment/msa_results/", BASENAME)        # Output name for MAFFT results
+    
+    PROTEIN_FAMILIES_PATH_ORTOLOGS = os.path.join("families/protein_families/ortologs", BASENAME)
+    PROTEIN_FAMILIES_PATH_PARALOGS = os.path.join("families/protein_families/paralogs", BASENAME)
+
+    OUTPUT_DIR_ORTOLOGS = os.path.join("allignment/msa_results/ortologs", BASENAME)
+    OUTPUT_DIR_PARALOGS = os.path.join("allignment/msa_results/paralogs", BASENAME)
 
 
-    mafft_align(PROTEIN_FAMILIES_PATH, OUTPUT_DIR)
+    mafft_align(PROTEIN_FAMILIES_PATH_ORTOLOGS, OUTPUT_DIR_ORTOLOGS)
+    mafft_align(PROTEIN_FAMILIES_PATH_PARALOGS, OUTPUT_DIR_PARALOGS)
