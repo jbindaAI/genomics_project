@@ -167,11 +167,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     BASENAME = args.accession_filename.split(".")[0]
-    ACCESSION_FILEPATH = os.path.join("part_I/accession_ids", args.accession_filename)
-    ARCHIVE_DIR = os.path.join("part_I/data/proteome_archives", BASENAME)
-    FASTA_DIR = os.path.join("part_I/data/proteome_fasta", BASENAME)
-    COMBINED_FASTA_DIR = os.path.join("part_I/data/combined_fasta", BASENAME)
-    MAPS_DIR = os.path.join("part_I/data/maps", BASENAME)
+    ACCESSION_FILEPATH = os.path.join("data_preparation/accession_ids", args.accession_filename)
+    ARCHIVE_DIR = os.path.join("data_preparation/data/proteome_archives", BASENAME)
+    FASTA_DIR = os.path.join("data_preparation/data/proteome_fasta", BASENAME)
+    COMBINED_FASTA_DIR = os.path.join("data_preparation/data/combined_fasta", BASENAME)
+    MAPS_DIR = os.path.join("data_preparation/data/maps", BASENAME)
 
     if not is_done(ARCHIVE_DIR):
         fetch_proteomes_ncbi_datasets(ACCESSION_FILEPATH, ARCHIVE_DIR)

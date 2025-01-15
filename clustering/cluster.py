@@ -46,15 +46,15 @@ def mmseqs2_cluster(combined_fasta_path, output_dir, tmp_dir, min_seq_id=0.5, co
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Script for performing clustering with MMSeqs2 algorithm.")
-    parser.add_argument("--accession_filename", required=True, help="Name of an accession file.")
+    parser.add_argument("--basename", required=True, help="Name used for intermediate results saving.")
     parser.add_argument("--min_seq_id", required=True, type=float, help="Minimum sequence identity for clustering.")
     parser.add_argument("--coverage", required=True, type=float, help="Minimum coverage for clustering.")
     args = parser.parse_args()
 
-    BASENAME = args.accession_filename.split(".")[0]
-    COMBINED_FASTA_PATH = os.path.join("part_I/data/combined_fasta", BASENAME, "combined_proteins.faa")
-    OUTPUT_DIR = os.path.join("part_II/clustering_results/", BASENAME)        # Output name for MMseqs2 results
-    TMP_DIR = "part_II/tmp"                   # Temporary directory for MMseqs2
+    BASENAME = args.basename
+    COMBINED_FASTA_PATH = os.path.join("data_preparation/data/combined_fasta", BASENAME, "combined_proteins.faa")
+    OUTPUT_DIR = os.path.join("clustering/clustering_results/", BASENAME)        # Output name for MMseqs2 results
+    TMP_DIR = "clustering/tmp"                   # Temporary directory for MMseqs2
     
     os.makedirs(TMP_DIR, exist_ok=True)
 
