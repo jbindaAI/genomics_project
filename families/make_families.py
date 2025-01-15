@@ -55,7 +55,7 @@ def load_genome_map(dataset:str):
     """
     Loads previously computed genome maps.
     """
-    with open(f"part_I/data/maps/{dataset}/genome_map.pkl", "rb") as f1: 
+    with open(f"data_preparation/data/maps/{dataset}/genome_map.pkl", "rb") as f1: 
         genome_map = pickle.load(f1)
     return genome_map
 
@@ -87,18 +87,18 @@ def prepare_families(filtered_clusters:dict, genome_map:dict, output_dir:str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Script for filtering 1-1 clusters from MMseqs2 results.")
-    parser.add_argument("--accession_filename", required=True, help="Name of an accession file.")
+    parser.add_argument("--basename", required=True, help="Name used for intermediate results saving.")
     parser.add_argument("--min_cluster_size", required=True, type=int, help="Minimum number of sequences in clusters.")
     args = parser.parse_args()
 
     # Paths and parameters
-    BASENAME = args.accession_filename.split(".")[0]
+    BASENAME = args.basename
     MIN_CLUSTER_SIZE = args.min_cluster_size
-    CLUSTER_RES_PATH = os.path.join("part_II/clustering_results", BASENAME, "clustering_results_cluster.tsv")
-    FILTERED_OUTPUT_FILE = os.path.join("part_III/filtered_clusters", BASENAME, "filtered_clusters_1-1.txt")
-    FAMILIES_OUTPUT_DIR = os.path.join("part_III/protein_families", BASENAME)
+    CLUSTER_RES_PATH = os.path.join("clustering/clustering_results", BASENAME, "clustering_results_cluster.tsv")
+    FILTERED_OUTPUT_FILE = os.path.join("families/filtered_clusters", BASENAME, "filtered_clusters_1-1.txt")
+    FAMILIES_OUTPUT_DIR = os.path.join("families/protein_families", BASENAME)
 
-    os.makedirs(os.path.join("part_III/filtered_clusters", BASENAME), exist_ok=True)
+    os.makedirs(os.path.join("families/filtered_clusters", BASENAME), exist_ok=True)
     os.makedirs(FAMILIES_OUTPUT_DIR, exist_ok=True)
 
     # Load genome map

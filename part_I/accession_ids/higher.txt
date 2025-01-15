@@ -1,9 +1,0 @@
-GCF_000001405.40; Homo sapiens
-GCF_011100685.1; Canis lupus familiaris
-GCF_018350175.1; Felis catus
-GCF_000002035.6; Danio rerio
-GCF_000001735.4; Arabidopsis thaliana
-GCF_000001635.27; Mus musculus
-GCF_000001215.4; Drosophila melanogaster
-GCF_000002775.5; Populus trichocarpa
-GCF_000002985.6; Caenorhabditis elegans
