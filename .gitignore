@@ -12,3 +12,4 @@ filtered_clusters*
 *.mldist
 *.phy
 *.txt
+*.contree

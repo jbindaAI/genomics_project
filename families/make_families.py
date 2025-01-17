@@ -46,8 +46,8 @@ def filter_clusters(cluster_map, min_cluster_size, genome_map, one2one:bool):
             genome_counts[genomeID] += 1
             genome_sequences[genomeID] = seq
         
-        # Check if cluster is 1-1 (exactly one sequence per genome)
-        if one2one and len(genome_counts) == len(genome_sequences) and all(count == 1 for count in genome_counts.values()):
+        # Check if cluster is 1-1 (exactly one sequence per genome and we want only clusters with ALL sequences - bijective)
+        if one2one and len(genome_counts) == len(genome_sequences) and len(genome_counts)==NUMBER_OF_ALL_SEQUENCES and all(count == 1 for count in genome_counts.values()):
             filtered_clusters[cluster] = {genomeID: genome_sequences[genomeID] for genomeID in genome_sequences}
         elif not one2one:
             filtered_clusters[cluster] = {genomeID: genome_sequences[genomeID] for genomeID in genome_sequences}
@@ -61,7 +61,11 @@ def load_genome_map(dataset:str):
     """
     with open(f"data_preparation/data/maps/{dataset}/genome_map.pkl", "rb") as f1: 
         genome_map = pickle.load(f1)
-    return genome_map
+    
+    with open(f"data_preparation/data/maps/{dataset}/genomeID2name.pkl", "rb") as f2:
+        genomeID2name = pickle.load(f2)
+    
+    return genome_map, genomeID2name
 
 
 def save_filtered_clusters(filtered_clusters, output_file):
@@ -113,8 +117,10 @@ if __name__ == "__main__":
     os.makedirs(PARALOGS_FAMILIES_OUTPUT_DIR, exist_ok=True)
 
     # Load genome map
-    genome_map = load_genome_map(BASENAME)
+    genome_map, genomeID2name = load_genome_map(BASENAME)
     print(f"Loaded genome map with {len(genome_map)} sequences.")
+
+    NUMBER_OF_ALL_SEQUENCES = len(genomeID2name.keys())
 
     # Parse clusters
     cluster_map = parse_clusters(CLUSTER_RES_PATH)
@@ -126,7 +132,7 @@ if __name__ == "__main__":
 
     # Filter 1-1 clusters
     clusters_ortologs = filter_clusters(cluster_map, MIN_CLUSTER_SIZE, genome_map, one2one=True)
-    print(f"Extracted {len(clusters_ortologs)} 1-1 clusters (without paralogs).")
+    print(f"Extracted {len(clusters_ortologs)} 1-1 clusters (without paralogs, bijective).")
 
     # Save clusters with paralogs in a file
     paralogs_save_path = os.path.join(CLUSTER_OUTPUT_DIR_PARALOGS, "clusters_paralogs.txt")

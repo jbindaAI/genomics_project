@@ -1,6 +1,7 @@
 from concurrent.futures import ProcessPoolExecutor
 import subprocess
 import argparse
+from pathlib import Path
 from tqdm import tqdm
 import os
 
@@ -57,6 +58,26 @@ def make_trees(msa_path: str, output_dir: str, cpu_cores: int, bootstrap: int, n
         ))
 
 
+def merge_results(trees_path: str, output_file: str = "all_trees.txt") -> None:
+    """
+    Merges all .treefile files in the given directory into one file.
+    """
+    trees_dir = Path(trees_path)
+    treefiles = sorted(trees_dir.glob("*.treefile"))
+
+    output_path = trees_dir / output_file
+    try:
+        with output_path.open("w") as f_out:
+            for treefile in treefiles:
+                with treefile.open("r") as f_in:
+                    first_line = f_in.readline().strip()
+                    if first_line:
+                        f_out.write(first_line + "\n")
+        print(f"Merged {len(treefiles)} .treefile(s) into {output_file}")
+    except Exception as e:
+        print(f"Error while merging files: {e}")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Script for performing tree computations.")
     parser.add_argument("--basename", required=True, help="Name used for intermediate results saving.")
@@ -69,7 +90,33 @@ if __name__ == "__main__":
     NUM_PROCESSES = args.num_processes
     BOOTSTRAP = args.bootstrap
     BASENAME = args.basename
-    MSA_PATH = os.path.join("allignment/msa_results", BASENAME)
-    OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME)
 
-    make_trees(MSA_PATH, OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
+    ORTOLOGS_MSA_PATH = os.path.join("allignment/msa_results/ortologs", BASENAME)
+    PARALOGS_MSA_RESULTS = os.path.join("allignment/msa_results/paralogs", BASENAME)
+
+    UNROOTED_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "unrooted")
+    ROOTED_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "rooted")
+
+    UNROOTED_BOOTSTRAP_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "unrooted_boot")
+    ROOTED_BOOTSTRAP_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "rooted_boot")
+
+    # Make ML Trees using ortological sequences without bootstrap.
+    make_trees(ORTOLOGS_MSA_PATH, UNROOTED_OUTPUT_DIR, CPU_CORES, bootstrap=0, num_processes=NUM_PROCESSES)
+    merge_results(UNROOTED_OUTPUT_DIR, output_file="all_trees.txt")
+
+    # Make ML Trees using ortological sequences with bootstrap (if greater than zero)
+    if BOOTSTRAP > 0:
+        make_trees(ORTOLOGS_MSA_PATH, UNROOTED_BOOTSTRAP_OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
+        merge_results(UNROOTED_BOOTSTRAP_OUTPUT_DIR, output_file="all_trees_bootstrap.txt")
+
+    # Make SOMEHOW Trees using PARALOGS sequences without bootstrap.
+    #make_trees(ORTOLOGS_MSA_PATH, UNROOTED_OUTPUT_DIR, CPU_CORES, bootstrap=0, num_processes=NUM_PROCESSES)
+    #merge_results(UNROOTED_OUTPUT_DIR, output_file="all_trees.txt")
+
+    # Make SOMEHOW Trees using PARALOGS sequences with bootstrap (if greater than zero)
+    #if BOOTSTRAP > 0:
+    #    make_trees(ORTOLOGS_MSA_PATH, UNROOTED_BOOTSTRAP_OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
+    #    merge_results(UNROOTED_BOOTSTRAP_OUTPUT_DIR, output_file="all_trees_bootstrap.txt")
+
+
+
