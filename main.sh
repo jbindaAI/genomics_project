@@ -59,4 +59,8 @@ python3 trees/make_consensus_tree.py --basename "$BASENAME" --min_support "$MIN_
 echo "Step 7: Constructin SuperTree..."
 python3 trees/make_super_tree.py --basename "$BASENAME" --method "$SUPER_TREE_METHOD" --cpu_cores "$SUPERTREE_CPU_CORES"
 
+# Step 8: Saving figures with achieved trees:
+echo "Saving figures with achieved trees..."
+Rscript trees/visualize_trees.R
+
 echo "Pipeline completed successfully!"

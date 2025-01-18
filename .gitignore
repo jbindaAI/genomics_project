@@ -15,3 +15,5 @@ filtered_clusters*
 *.contree
 *.boottrees
 *.nwk
+*.png
+*.pdf
