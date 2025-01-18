@@ -1,29 +1,29 @@
-GCF_000006945.2; Salmonella enterica Typhimurium
-GCA_019048125.1; Klebsiella aerogenes
-GCF_000222975.1; Yersinia pestis
-GCF_000005845.2; Escherichia coli
-GCF_030291735.1; Serratia marcescens
-GCF_001941585.1; Legionella pneumophila
-GCF_000953635.1; Legionella micdadei
-GCF_029026145.1; Legionella cardiaca
-GCF_000953655.1; Legionella hackeliae
-GCF_023921225.1; Legionella lytica
-GCF_022869645.1; Neisseria meningitidis
-GCF_005221285.1; Neisseria flavescens
-GCF_005221305.1; Neisseria subflava
-GCF_013030075.1; Neisseria gonorrhoeae
-GCF_008806995.1; Neisseria animalis
-GCF_000283595.1; Rickettsia japonica
-GCF_000499665.2; Rickettsia monacensis
-GCF_000166935.1; Rickettsia sibirica
-GCF_007971685.1; Wolbachia pipientis
-GCF_000283915.1; Rickettsia canadensis
-GCF_000007125.1; Brucella melitensis
-GCF_000018525.1; Brucella canis
-GCF_000007505.1; Brucella suis
-GCF_000016845.1; Brucella ovis
-GCF_015326295.1; Brucella anthropi
-GCF_002795805.1; Mariprofundus aestuarium
-GCF_002795825.1; Mariprofundus ferrinatatus
-GCF_005818865.1; Mariprofundus erugo
-GCF_001895085.1; Mariprofundus micogutta
+GCF_000006945.2; Salmonella_enterica_Typhimurium
+GCA_019048125.1; Klebsiella_aerogenes
+GCF_000222975.1; Yersinia_pestis
+GCF_000005845.2; Escherichia_coli
+GCF_030291735.1; Serratia_marcescens
+GCF_001941585.1; Legionella_pneumophila
+GCF_000953635.1; Legionella_micdadei
+GCF_029026145.1; Legionella_cardiaca
+GCF_000953655.1; Legionella_hackeliae
+GCF_023921225.1; Legionella_lytica
+GCF_022869645.1; Neisseria_meningitidis
+GCF_005221285.1; Neisseria_flavescens
+GCF_005221305.1; Neisseria_subflava
+GCF_013030075.1; Neisseria_gonorrhoeae
+GCF_008806995.1; Neisseria_animalis
+GCF_000283595.1; Rickettsia_japonica
+GCF_000499665.2; Rickettsia_monacensis
+GCF_000166935.1; Rickettsia_sibirica
+GCF_007971685.1; Wolbachia_pipientis
+GCF_000283915.1; Rickettsia_canadensis
+GCF_000007125.1; Brucella_melitensis
+GCF_000018525.1; Brucella_canis
+GCF_000007505.1; Brucella_suis
+GCF_000016845.1; Brucella_ovis
+GCF_015326295.1; Brucella_anthropi
+GCF_002795805.1; Mariprofundus_aestuarium
+GCF_002795825.1; Mariprofundus_ferrinatatus
+GCF_005818865.1; Mariprofundus_erugo
+GCF_001895085.1; Mariprofundus_micogutta

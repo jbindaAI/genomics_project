@@ -103,8 +103,8 @@ def prepare_genome_names_map(accession_file, output_dir):
             name = parts[1].strip()
             name_map[accession] = name
     
-    #with open(os.path.join(output_dir, "genomeID2name.pkl"), "wb") as f:
-        #pickle.dump(name_map, f)
+    with open(os.path.join(output_dir, "genomeID2name.pkl"), "wb") as f:
+        pickle.dump(name_map, f)
     return name_map
 
 
