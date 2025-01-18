@@ -22,7 +22,7 @@ def parse_clusters(cluster_file: str):
     return cluster_map
 
 
-def filter_clusters(cluster_map, min_cluster_size, genome_map, one2one:bool):
+def filter_clusters_ortologs(cluster_map, min_cluster_size, genome_map):
     """
     Filter clusters to include cluster of size >= min_cluster_size.
     Also If needed select only 1-1 clusters (one sequence per genome).
@@ -42,15 +42,25 @@ def filter_clusters(cluster_map, min_cluster_size, genome_map, one2one:bool):
         genome_sequences = {}
         
         for seq in sequences:
-            genomeID, _, _ = genome_map.get(seq, "Unknown")
-            genome_counts[genomeID] += 1
-            genome_sequences[genomeID] = seq
+            _, genome_name, _ = genome_map.get(seq, "Unknown") # SequenceID : (Genome ID, Genome name, sequence)
+            genome_counts[genome_name] += 1
+            genome_sequences[genome_name] = seq
         
         # Check if cluster is 1-1 (exactly one sequence per genome and we want only clusters with ALL sequences - bijective)
-        if one2one and len(genome_counts) == len(genome_sequences) and len(genome_counts)==NUMBER_OF_ALL_SEQUENCES and all(count == 1 for count in genome_counts.values()):
-            filtered_clusters[cluster] = {genomeID: genome_sequences[genomeID] for genomeID in genome_sequences}
-        elif not one2one:
-            filtered_clusters[cluster] = {genomeID: genome_sequences[genomeID] for genomeID in genome_sequences}
+        if len(genome_counts) == len(genome_sequences) and len(genome_counts)==NUMBER_OF_ALL_SEQUENCES and all(count == 1 for count in genome_counts.values()):
+            filtered_clusters[cluster] = {genome_name: genome_sequences[genome_name] for genome_name in genome_sequences}
+
+    return filtered_clusters
+
+
+def filter_clusters_paralogs(cluster_map, min_cluster_size):
+    """Filter out clusters of size lower than threshold"""
+    filtered_clusters = {}
+    for cluster, sequences in cluster_map.items():
+        if len(sequences) < min_cluster_size:
+            continue
+
+        filtered_clusters[cluster] = sequences
 
     return filtered_clusters
 
@@ -68,21 +78,7 @@ def load_genome_map(dataset:str):
     return genome_map, genomeID2name
 
 
-def save_filtered_clusters(filtered_clusters, output_file):
-    """
-    Save filtered 1-1 clusters to a file.
-    
-    Parameters:
-    - filtered_clusters: dict, Filtered clusters with genome names as keys.
-    - output_file: str, Path to save the output file.
-    """
-    with open(output_file, "w") as f:
-        for cluster, genomes in filtered_clusters.items():
-            cluster_line = f"{cluster}:" + "".join(f"{seq} " for seq in genomes.values())
-            f.write(cluster_line + "\n")
-
-
-def prepare_families(filtered_clusters:dict, genome_map:dict, output_dir:str):
+def prepare_ortologs_families(filtered_clusters:dict, genome_map:dict, output_dir:str):
     """
     Prepare protein families for multiple sequence analysis.
     """
@@ -91,6 +87,18 @@ def prepare_families(filtered_clusters:dict, genome_map:dict, output_dir:str):
         with open(os.path.join(output_dir, f"{cluster}.fasta"), "w") as f:
             for genome, seq_ID in genomes.items():
                 f.write(f">{genome}\n{genome_map[seq_ID][2]}\n")
+
+
+def prepare_paralogs_families(filtered_clusters:dict, genome_map:dict, output_dir:str):
+    """
+    Prepare protein families for multiple sequence analysis.
+    """
+    for cluster, seq_ids in filtered_clusters.items():
+        # Save sequences to a file
+        with open(os.path.join(output_dir, f"{cluster}.fasta"), "w") as f:
+            for seq_ID in seq_ids:
+                genome_name = genome_map[seq_ID][1]
+                f.write(f">{genome_name}\n{genome_map[seq_ID][2]}\n")
 
 
 if __name__ == "__main__":
@@ -110,8 +118,6 @@ if __name__ == "__main__":
     ORTOLOGS_FAMILIES_OUTPUT_DIR = os.path.join("families/protein_families/ortologs", BASENAME)
     PARALOGS_FAMILIES_OUTPUT_DIR = os.path.join("families/protein_families/paralogs", BASENAME)
 
-    os.makedirs(CLUSTER_OUTPUT_DIR_ORTOLOGS, exist_ok=True)
-    os.makedirs(CLUSTER_OUTPUT_DIR_PARALOGS, exist_ok=True)
 
     os.makedirs(ORTOLOGS_FAMILIES_OUTPUT_DIR, exist_ok=True)
     os.makedirs(PARALOGS_FAMILIES_OUTPUT_DIR, exist_ok=True)
@@ -127,26 +133,15 @@ if __name__ == "__main__":
     print(f"Parsed {len(cluster_map)} clusters from {CLUSTER_RES_PATH}.")
 
     # Prepare clusters with paralogs
-    clusters_paralogs = filter_clusters(cluster_map, MIN_CLUSTER_SIZE, genome_map, one2one=False)
+    clusters_paralogs = filter_clusters_paralogs(cluster_map, MIN_CLUSTER_SIZE)
     print(f"Extracted {len(clusters_paralogs)} clusters with paralogs.")
 
     # Filter 1-1 clusters
-    clusters_ortologs = filter_clusters(cluster_map, MIN_CLUSTER_SIZE, genome_map, one2one=True)
+    clusters_ortologs = filter_clusters_ortologs(cluster_map, MIN_CLUSTER_SIZE, genome_map)
     print(f"Extracted {len(clusters_ortologs)} 1-1 clusters (without paralogs, bijective).")
 
-    # Save clusters with paralogs in a file
-    paralogs_save_path = os.path.join(CLUSTER_OUTPUT_DIR_PARALOGS, "clusters_paralogs.txt")
-    save_filtered_clusters(clusters_paralogs, paralogs_save_path)
-    print(f"Clusters with paralogs saved to {paralogs_save_path}.")
-
-    # Save clusters without paralogs in a file
-    ortologs_save_path = os.path.join(CLUSTER_OUTPUT_DIR_ORTOLOGS, "clusters_1-1.txt")
-    save_filtered_clusters(clusters_ortologs, ortologs_save_path)
-    print(f"Clusters without paralogs saved to {ortologs_save_path}.")
-
     # Prepare families for MSA (with paralogs):
-    prepare_families(clusters_paralogs, genome_map, PARALOGS_FAMILIES_OUTPUT_DIR)
+    prepare_paralogs_families(clusters_paralogs, genome_map, PARALOGS_FAMILIES_OUTPUT_DIR)
 
     # Prepare families for MSA (without paralogs):
-    prepare_families(clusters_ortologs, genome_map, ORTOLOGS_FAMILIES_OUTPUT_DIR)
-    print("Families prepared for multiple sequence analysis.")
+    prepare_ortologs_families(clusters_ortologs, genome_map, ORTOLOGS_FAMILIES_OUTPUT_DIR)

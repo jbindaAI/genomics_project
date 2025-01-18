@@ -132,14 +132,14 @@ if __name__ == "__main__":
         make_trees(ORTOLOGS_MSA_PATH, ORTOLOGS_BOOTSTRAP_OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
         merge_results(ORTOLOGS_BOOTSTRAP_OUTPUT_DIR, output_file="all_trees_bootstrap.txt", eliminate_trees=True, support_threshold=SUPPORT_THRESHOLD)
 
-    # Make SOMEHOW Trees using PARALOGS sequences without bootstrap.
-    #make_trees(ORTOLOGS_MSA_PATH, UNROOTED_OUTPUT_DIR, CPU_CORES, bootstrap=0, num_processes=NUM_PROCESSES)
-    #merge_results(UNROOTED_OUTPUT_DIR, output_file="all_trees.txt")
+    # Make ML Trees using PARALOGS sequences without bootstrap.
+    make_trees(PARALOGS_MSA_RESULTS, PARALOGS_OUTPUT_DIR, CPU_CORES, bootstrap=0, num_processes=NUM_PROCESSES)
+    merge_results(PARALOGS_OUTPUT_DIR, output_file="all_trees.txt")
 
-    # Make SOMEHOW Trees using PARALOGS sequences with bootstrap (if greater than zero)
-    #if BOOTSTRAP > 0:
-    #    make_trees(ORTOLOGS_MSA_PATH, UNROOTED_BOOTSTRAP_OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
-    #    merge_results(UNROOTED_BOOTSTRAP_OUTPUT_DIR, output_file="all_trees_bootstrap.txt")
+    # Make ML Trees using PARALOGS sequences with bootstrap (if greater than zero)
+    if BOOTSTRAP > 0:
+        make_trees(PARALOGS_MSA_RESULTS, PARALOGS_BOOTSTRAP_OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
+        merge_results(PARALOGS_BOOTSTRAP_OUTPUT_DIR, output_file="all_trees_bootstrap.txt", eliminate_trees=True, support_threshold=SUPPORT_THRESHOLD)
 
 
 
