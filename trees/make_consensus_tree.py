@@ -44,8 +44,8 @@ if __name__ == "__main__":
     BASENAME = args.basename
     MIN_SUPPORT = args.min_support
     CPU_CORES = args.cpu_cores
-    ALL_TREES_PATH = os.path.join("trees/tree_results/", BASENAME, "unrooted", "all_trees.txt")
-    ALL_TREES_PATH_BOOTSTRAP = os.path.join("trees/tree_results/", BASENAME, "unrooted_boot", "all_trees_bootstrap.txt")
+    ALL_TREES_PATH = os.path.join("trees/tree_results/", BASENAME, "ortologs", "all_trees.txt")
+    ALL_TREES_PATH_BOOTSTRAP = os.path.join("trees/tree_results/", BASENAME, "ortologs_boot", "all_trees_bootstrap.txt")
 
     OUTPUT_DIR = os.path.join("trees/consensus_results", BASENAME)
 

@@ -13,3 +13,4 @@ filtered_clusters*
 *.phy
 *.txt
 *.contree
+*.boottrees

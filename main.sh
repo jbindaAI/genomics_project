@@ -15,9 +15,10 @@ MIN_CLUSTER_SIZE=4  # Minimum number of sequences in clusters.
 MSA_NUM_PROCESSES=4
 
 ## Tree options
-CPU_CORES=12              # Number of CPU cores to use during tree computation (If you don't know, try: os.cpu_count())
-TREE_NUM_PROCESSES=4      # NUmber of separate processes to run. Note, it would be better if: CPU_CORES % NUM_PROCESSES == 0
-BOOTSTRAP_REPLICATES=100  # Number of bootstrap replicates. If greater than zero, trees will be computed two times. Once without bootstraping and second one with apllying bootstrap.
+CPU_CORES=12                      # Number of CPU cores to use during tree computation (If you don't know, try: os.cpu_count())
+TREE_NUM_PROCESSES=4              # Number of separate processes to run. Note, it would be better if: CPU_CORES % NUM_PROCESSES == 0
+BOOTSTRAP_REPLICATES=10           # Number of bootstrap replicates. If greater than zero, trees will be computed two times. Once without bootstraping and second one with apllying bootstrap.
+BOOTSTRAP_SUPPORT_THRESHOLD=70.0  # Bootstrap trees with mean support lower than threshold are eliminated from analysis.
 
 ## Consensus Tree options
 MIN_SUPPORT=0           # Value from 0 to 1. If zero it perform Greedy Consensus, if 0.5 it performs Majority Consensus
@@ -44,7 +45,7 @@ python3 allignment/allign.py --basename "$BASENAME" --num_processes "$MSA_NUM_PR
 
 # # Step 5: Construct gene trees
 echo "Step 5: Constructing family trees..."
-python3 trees/make_trees.py --basename "$BASENAME" --cpu_cores "$CPU_CORES" --bootstrap "$BOOTSTRAP_REPLICATES" --num_processes "$TREE_NUM_PROCESSES"
+python3 trees/make_trees.py --basename "$BASENAME" --cpu_cores "$CPU_CORES" --bootstrap "$BOOTSTRAP_REPLICATES" --num_processes "$TREE_NUM_PROCESSES" --support_threshold "$BOOTSTRAP_SUPPORT_THRESHOLD"
 
 # Step 6: Construct Consensus Trees
 echo "Step 6: Constructing Consensus trees..."

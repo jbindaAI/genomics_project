@@ -4,11 +4,12 @@ import argparse
 from pathlib import Path
 from tqdm import tqdm
 import os
+import re
 
 
 def run_tree_computation(msa_file: str, msa_path: str, output_dir: str, cpu_cores: int, bootstrap: int):
     exact_filepath = os.path.join(msa_path, msa_file)
-    output_prefix = os.path.join(output_dir, f"{msa_file.split("-")[0]}")
+    output_prefix = os.path.join(output_dir, f"{msa_file.split('-')[0]}")
     
     try:
         # Prepare the IQ-TREE command
@@ -22,7 +23,7 @@ def run_tree_computation(msa_file: str, msa_path: str, output_dir: str, cpu_core
         ]
 
         if bootstrap > 0:
-            command + ["-b", str(bootstrap)]
+            command.extend(["-b", str(bootstrap)])
         
         # Run the IQ-TREE command
         subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -58,7 +59,23 @@ def make_trees(msa_path: str, output_dir: str, cpu_cores: int, bootstrap: int, n
         ))
 
 
-def merge_results(trees_path: str, output_file: str = "all_trees.txt") -> None:
+def compute_bootstrap_support(tree: str) -> float:
+    """
+    Computes the average bootstrap support for a given tree.
+    """
+    bootstrap_values = re.findall(r'\)(\d+):', tree)
+    bootstrap_values = [float(val) for val in bootstrap_values]
+
+    # Compute the average bootstrap support
+    if bootstrap_values:
+        average_support = sum(bootstrap_values) / len(bootstrap_values)
+    else:
+        average_support = 0.0
+    
+    return average_support
+
+
+def merge_results(trees_path: str, output_file: str = "all_trees.txt", eliminate_trees:bool=False, support_threshold:float=70) -> None:
     """
     Merges all .treefile files in the given directory into one file.
     """
@@ -70,8 +87,12 @@ def merge_results(trees_path: str, output_file: str = "all_trees.txt") -> None:
         with output_path.open("w") as f_out:
             for treefile in treefiles:
                 with treefile.open("r") as f_in:
-                    first_line = f_in.readline().strip()
+                    first_line = f_in.readline().strip() # tree
                     if first_line:
+                        if eliminate_trees:
+                            support = compute_bootstrap_support(first_line)
+                            if support < support_threshold:
+                                continue
                         f_out.write(first_line + "\n")
         print(f"Merged {len(treefiles)} .treefile(s) into {output_file}")
     except Exception as e:
@@ -84,30 +105,32 @@ if __name__ == "__main__":
     parser.add_argument("--cpu_cores", required=True, type=int, help="Number of CPU cores to use during computations.")
     parser.add_argument("--num_processes", required=True, type=int, help="Number of separate processes to run. CPU cores are uniformly distributed on processes.")
     parser.add_argument("--bootstrap", required=True, type=int, help="Number of bootstrap replicates.")
+    parser.add_argument("--support_threshold", required=True, type=float, help="Threshold for mean bootstrap support in Tree.")
     args = parser.parse_args()
 
     CPU_CORES = args.cpu_cores
     NUM_PROCESSES = args.num_processes
     BOOTSTRAP = args.bootstrap
+    SUPPORT_THRESHOLD = args.support_threshold
     BASENAME = args.basename
 
     ORTOLOGS_MSA_PATH = os.path.join("allignment/msa_results/ortologs", BASENAME)
     PARALOGS_MSA_RESULTS = os.path.join("allignment/msa_results/paralogs", BASENAME)
 
-    UNROOTED_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "unrooted")
-    ROOTED_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "rooted")
+    ORTOLOGS_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "ortologs")
+    PARALOGS_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "paralogs")
 
-    UNROOTED_BOOTSTRAP_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "unrooted_boot")
-    ROOTED_BOOTSTRAP_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "rooted_boot")
+    ORTOLOGS_BOOTSTRAP_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "ortologs_boot")
+    PARALOGS_BOOTSTRAP_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "paralogs_boot")
 
     # Make ML Trees using ortological sequences without bootstrap.
-    make_trees(ORTOLOGS_MSA_PATH, UNROOTED_OUTPUT_DIR, CPU_CORES, bootstrap=0, num_processes=NUM_PROCESSES)
-    merge_results(UNROOTED_OUTPUT_DIR, output_file="all_trees.txt")
+    make_trees(ORTOLOGS_MSA_PATH, ORTOLOGS_OUTPUT_DIR, CPU_CORES, bootstrap=0, num_processes=NUM_PROCESSES)
+    merge_results(ORTOLOGS_OUTPUT_DIR, output_file="all_trees.txt")
 
     # Make ML Trees using ortological sequences with bootstrap (if greater than zero)
     if BOOTSTRAP > 0:
-        make_trees(ORTOLOGS_MSA_PATH, UNROOTED_BOOTSTRAP_OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
-        merge_results(UNROOTED_BOOTSTRAP_OUTPUT_DIR, output_file="all_trees_bootstrap.txt")
+        make_trees(ORTOLOGS_MSA_PATH, ORTOLOGS_BOOTSTRAP_OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
+        merge_results(ORTOLOGS_BOOTSTRAP_OUTPUT_DIR, output_file="all_trees_bootstrap.txt", eliminate_trees=True, support_threshold=SUPPORT_THRESHOLD)
 
     # Make SOMEHOW Trees using PARALOGS sequences without bootstrap.
     #make_trees(ORTOLOGS_MSA_PATH, UNROOTED_OUTPUT_DIR, CPU_CORES, bootstrap=0, num_processes=NUM_PROCESSES)
