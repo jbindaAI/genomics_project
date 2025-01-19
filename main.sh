@@ -17,7 +17,7 @@ MSA_NUM_PROCESSES=4
 ## Tree options
 CPU_CORES=12                      # Number of CPU cores to use during tree computation (If you don't know, try: os.cpu_count())
 TREE_NUM_PROCESSES=4              # Number of separate processes to run. Note, it would be better if: CPU_CORES % NUM_PROCESSES == 0
-BOOTSTRAP_REPLICATES=10           # Number of bootstrap replicates. If greater than zero, trees will be computed two times. Once without bootstraping and second one with apllying bootstrap.
+BOOTSTRAP_REPLICATES=5           # Number of bootstrap replicates. If greater than zero, trees will be computed two times. Once without bootstraping and second one with apllying bootstrap.
 BOOTSTRAP_SUPPORT_THRESHOLD=70.0  # Bootstrap trees with mean support lower than threshold are eliminated from analysis.
 
 ## Consensus Tree options
@@ -25,9 +25,10 @@ MIN_SUPPORT=0           # Value from 0 to 1. If zero it perform Greedy Consensus
 CONSENSUS_CPU_CORES=4
 
 ## SuperTree options
+### Options for orthological families (Using R based SuperTree from phangorn package.):
 SUPER_TREE_METHOD="MRP"
 SUPERTREE_CPU_CORES=4
-
+### Note! for non-othological families different algorithm is used (Fasturec). 
 
 BASENAME="${ACCESSION_FILE%.*}"
 
@@ -51,16 +52,20 @@ python3 allignment/allign.py --basename "$BASENAME" --num_processes "$MSA_NUM_PR
 echo "Step 5: Constructing family trees..."
 python3 trees/make_trees.py --basename "$BASENAME" --cpu_cores "$CPU_CORES" --bootstrap "$BOOTSTRAP_REPLICATES" --num_processes "$TREE_NUM_PROCESSES" --support_threshold "$BOOTSTRAP_SUPPORT_THRESHOLD"
 
-# Step 6: Construct Consensus Tree (based on orthological sequences)
-echo "Step 6: Constructing Consensus tree..."
+# Step 6.1: Construct Consensus Tree (based on orthological sequences)
+echo "Step 6.1: Constructing Consensus tree using orthological families..."
 python3 trees/make_consensus_tree.py --basename "$BASENAME" --min_support "$MIN_SUPPORT" --cpu_cores "$CONSENSUS_CPU_CORES"
 
-# Step 7: Construct SuperTree (based on paralogical sequences)
-echo "Step 7: Constructin SuperTree..."
+# Step 6.2: Construct SuperTree (based on orthological sequences)
+echo "Step 6.2: Constructing SuperTree using orthological families..."
 python3 trees/make_super_tree.py --basename "$BASENAME" --method "$SUPER_TREE_METHOD" --cpu_cores "$SUPERTREE_CPU_CORES"
+
+# Step 7: Construct SuperTree (based on paralogical sequences)
+echo "Step 7: Constructing SuperTree using paralogical families..."
+python3 trees/make_super_tree_fasturec.py --basename "$BASENAME"
 
 # Step 8: Saving figures with achieved trees:
 echo "Saving figures with achieved trees..."
-Rscript trees/visualize_trees.R
+Rscript trees/visualize_trees.R "$BASENAME"
 
 echo "Pipeline completed successfully!"

@@ -17,3 +17,5 @@ filtered_clusters*
 *.nwk
 *.png
 *.pdf
+*.msa
+fasturec

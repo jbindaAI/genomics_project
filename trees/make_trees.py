@@ -7,6 +7,38 @@ import os
 import re
 
 
+def add_paralog_identifiers(msa_file_path: str, new_dir:str) -> str:
+    """
+    Parses the MSA file to add a number to each duplicated genome name.
+    """
+    # Create a dictionary to keep track of duplicate names
+    name_counts = {}
+    output_lines = []
+    
+    with open(msa_file_path, 'r') as msa_file:
+        for line in msa_file:
+            if line.startswith(">"):  # Fasta header lines begin with '>'
+                genome_name = line.strip().lstrip(">")  # Extract genome name
+                if genome_name in name_counts:
+                    name_counts[genome_name] += 1
+                    new_name = f"{genome_name}_{name_counts[genome_name]}"
+                else:
+                    name_counts[genome_name] = 0
+                    new_name = genome_name
+                # Replace the genome name in the header line
+                output_lines.append(f">{new_name}\n")
+            else:
+                # Preserve the sequence lines as they are
+                output_lines.append(line)
+    
+    # Save the modified MSA to a new file
+    new_msa_file_name = msa_file_path.split("/")[-1].replace(".fasta", "_modified.msa")
+    new_msa_file_path = os.path.join(new_dir, new_msa_file_name)
+    with open(new_msa_file_path, 'w') as new_msa_file:
+        new_msa_file.writelines(output_lines)
+    return new_msa_file_path.split("/")[-1]
+
+
 def run_tree_computation(msa_file: str, msa_path: str, output_dir: str, cpu_cores: int, bootstrap: int):
     exact_filepath = os.path.join(msa_path, msa_file)
     output_prefix = os.path.join(output_dir, f"{msa_file.split('-')[0]}")
@@ -38,7 +70,31 @@ def run_tree_computation(msa_file: str, msa_path: str, output_dir: str, cpu_core
         return (msa_file, f"Unexpected Error: {e}")
 
 
-def make_trees(msa_path: str, output_dir: str, cpu_cores: int, bootstrap: int, num_processes: int = 4):
+def make_trees_paralogs(msa_path: str, output_dir: str, cpu_cores: int, bootstrap: int, num_processes: int = 4):
+    os.makedirs(output_dir, exist_ok=True)
+    mod_msa_path = "allignment/msa_results/paralogs_modified/bacteria/"
+    os.makedirs(mod_msa_path, exist_ok=True) 
+
+    msa_files = os.listdir(msa_path)
+    msa_files = [add_paralog_identifiers(os.path.join(msa_path, msa_file), mod_msa_path) for msa_file in msa_files]
+    
+    with ProcessPoolExecutor(max_workers=num_processes) as executor:
+        results = list(tqdm(
+            executor.map(
+                run_tree_computation,
+                msa_files,
+                [mod_msa_path] * len(msa_files),
+                [output_dir] * len(msa_files),
+                [cpu_cores // num_processes] * len(msa_files),
+                [bootstrap] * len(msa_files)
+            ),
+            total=len(msa_files),
+            desc="Computing trees",
+            unit="file"
+        ))
+
+
+def make_trees_ortologs(msa_path: str, output_dir: str, cpu_cores: int, bootstrap: int, num_processes: int = 4):
     os.makedirs(output_dir, exist_ok=True)
     
     msa_files = os.listdir(msa_path)
@@ -99,6 +155,9 @@ def merge_results(trees_path: str, output_file: str = "all_trees.txt", eliminate
         print(f"Error while merging files: {e}")
 
 
+
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Script for performing tree computations.")
     parser.add_argument("--basename", required=True, help="Name used for intermediate results saving.")
@@ -124,21 +183,21 @@ if __name__ == "__main__":
     PARALOGS_BOOTSTRAP_OUTPUT_DIR = os.path.join("trees/tree_results/", BASENAME, "paralogs_boot")
 
     # Make ML Trees using ortological sequences without bootstrap.
-    make_trees(ORTOLOGS_MSA_PATH, ORTOLOGS_OUTPUT_DIR, CPU_CORES, bootstrap=0, num_processes=NUM_PROCESSES)
+    make_trees_ortologs(ORTOLOGS_MSA_PATH, ORTOLOGS_OUTPUT_DIR, CPU_CORES, bootstrap=0, num_processes=NUM_PROCESSES)
     merge_results(ORTOLOGS_OUTPUT_DIR, output_file="all_trees.txt")
 
     # Make ML Trees using ortological sequences with bootstrap (if greater than zero)
     if BOOTSTRAP > 0:
-        make_trees(ORTOLOGS_MSA_PATH, ORTOLOGS_BOOTSTRAP_OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
+        make_trees_ortologs(ORTOLOGS_MSA_PATH, ORTOLOGS_BOOTSTRAP_OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
         merge_results(ORTOLOGS_BOOTSTRAP_OUTPUT_DIR, output_file="all_trees_bootstrap.txt", eliminate_trees=True, support_threshold=SUPPORT_THRESHOLD)
 
     # Make ML Trees using PARALOGS sequences without bootstrap.
-    make_trees(PARALOGS_MSA_RESULTS, PARALOGS_OUTPUT_DIR, CPU_CORES, bootstrap=0, num_processes=NUM_PROCESSES)
+    make_trees_paralogs(PARALOGS_MSA_RESULTS, PARALOGS_OUTPUT_DIR, CPU_CORES, bootstrap=0, num_processes=NUM_PROCESSES)
     merge_results(PARALOGS_OUTPUT_DIR, output_file="all_trees.txt")
 
     # Make ML Trees using PARALOGS sequences with bootstrap (if greater than zero)
     if BOOTSTRAP > 0:
-        make_trees(PARALOGS_MSA_RESULTS, PARALOGS_BOOTSTRAP_OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
+        make_trees_paralogs(PARALOGS_MSA_RESULTS, PARALOGS_BOOTSTRAP_OUTPUT_DIR, CPU_CORES, BOOTSTRAP, NUM_PROCESSES)
         merge_results(PARALOGS_BOOTSTRAP_OUTPUT_DIR, output_file="all_trees_bootstrap.txt", eliminate_trees=True, support_threshold=SUPPORT_THRESHOLD)
 
 

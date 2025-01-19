@@ -24,10 +24,10 @@ if __name__ == "__main__":
     BASENAME = args.basename
     METHOD = args.method
     CPU_CORES = args.cpu_cores
-    ALL_TREES_PATH = os.path.join("trees/tree_results/", BASENAME, "paralogs", "all_trees.txt")
-    ALL_TREES_PATH_BOOTSTRAP = os.path.join("trees/tree_results/", BASENAME, "paralogs_boot", "all_trees_bootstrap.txt")
+    ALL_TREES_PATH = os.path.join("trees/tree_results/", BASENAME, "ortologs", "all_trees.txt")
+    ALL_TREES_PATH_BOOTSTRAP = os.path.join("trees/tree_results/", BASENAME, "ortologs_boot", "all_trees_bootstrap.txt")
 
-    OUTPUT_DIR = os.path.join("trees/super_tree_results", BASENAME)
+    OUTPUT_DIR = os.path.join("trees/super_tree_results/ortologs", BASENAME)
 
     # Make SuperTree from ML Trees build on Paralogical sequences WITHOUT Bootstrap
     os.makedirs(os.path.join(OUTPUT_DIR, "vanilla"), exist_ok=True)
